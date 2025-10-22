@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Chatbot Starter</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #0b1320; color: #f3f4f6; }
+    header { padding: 16px; background: #111827; border-bottom: 1px solid #1f2937; }
+    main { max-width: 800px; margin: 0 auto; padding: 16px; }
+    .chat { display: flex; flex-direction: column; gap: 12px; }
+    .msg { padding: 12px 14px; border-radius: 12px; max-width: 85%; line-height: 1.4; }
+    .user { background: #1f2937; align-self: flex-end; }
+    .bot { background: #374151; align-self: flex-start; }
+    .inputbar { display: flex; gap: 8px; position: sticky; bottom: 0; background: #0b1320; padding: 12px 0; border-top: 1px solid #1f2937; }
+    input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #374151; background: #111827; color: #fff; }
+    button { padding: 12px 16px; border-radius: 10px; border: 0; background: #2563eb; color: #fff; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .hint { font-size: 12px; opacity: .7; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>AI Chatbot Starter</strong>
+  </header>
+  <main>
+    <div id="chat" class="chat"></div>
+    <div class="inputbar">
+      <input id="input" placeholder="Frage hier eingeben…" />
+      <button id="send">Senden</button>
+    </div>
+    <div class="hint">Hinweis: Der Server erwartet eine gültige OPENAI_API_KEY-Variable.</div>
+  </main>
+  <script>
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('send');
+    const history = [];
+
+    function addMsg(text, who) {
+      const div = document.createElement('div');
+      div.className = `msg ${who}`;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function send() {
+      const text = input.value.trim();
+      if (!text) return;
+      addMsg(text, 'user');
+      input.value = '';
+      sendBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, history })
+        });
+        const data = await res.json();
+        const reply = data.reply || '(Keine Antwort)';
+        addMsg(reply, 'bot');
+        history.push({ role: 'user', content: text }, { role: 'assistant', content: reply });
+      } catch (e) {
+        addMsg('Fehler: ' + e, 'bot');
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    sendBtn.addEventListener('click', send);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') send();
+    });
+  </script>
+</body>
+</html>
